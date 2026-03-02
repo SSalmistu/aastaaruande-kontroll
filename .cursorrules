@@ -1,0 +1,33 @@
+You are helping build a web app for checking Estonian micro-enterprise annual reports.
+
+## Project context
+- This is a workshop project for accountants learning to code with AI
+- Language: Estonian (UI and all user-facing text must be in Estonian)
+- Keep code simple and readable — participants are beginners
+
+## Tech stack
+- Frontend: React + Vite + Tailwind CSS
+- Backend: Supabase (Auth, Database, Storage)
+- PDF parsing: pdf.js (in browser)
+- AI analysis: OpenAI API (GPT-4o)
+
+## Architecture
+1. User registers/logs in via Supabase Auth
+2. User uploads PDF → stored in Supabase Storage
+3. PDF text is extracted in the browser using pdf.js
+4. Extracted text + system prompt → sent to OpenAI API
+5. AI response displayed to user
+6. Results saved to Supabase `reports` table
+
+## Key files
+- `src/prompts/system-prompt.txt` — the AI system prompt for report checking (DO NOT modify)
+- `PRD.md` — product requirements
+- `.env` — contains VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_OPENAI_API_KEY
+
+## Rules
+- Use functional React components with hooks
+- Use Tailwind CSS for styling (no separate CSS files)
+- Keep components small and focused
+- Handle loading and error states
+- All UI text in Estonian
+- Use environment variables for API keys (never hardcode)

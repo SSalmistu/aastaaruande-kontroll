@@ -207,18 +207,32 @@ export function Dashboard() {
           </p>
 
           <div className="space-y-3">
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-sky-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-sky-700"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label
+                htmlFor="pdf-file"
+                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1"
+              >
+                Vali fail
+              </label>
+              <input
+                id="pdf-file"
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="sr-only"
+              />
 
-            {file ? (
-              <p className="text-xs text-slate-600">
-                Valitud fail: <span className="font-medium">{file.name}</span>
-              </p>
-            ) : null}
+              {file ? (
+                <p className="text-xs text-slate-600">
+                  Valitud fail:{" "}
+                  <span className="font-medium break-all">{file.name}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Fail ei ole veel valitud.
+                </p>
+              )}
+            </div>
 
             {error ? (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -232,18 +246,21 @@ export function Dashboard() {
               </div>
             ) : null}
 
-            <button
-              type="button"
-              disabled={isUploading || isAnalyzing}
-              onClick={handleUpload}
-              className="mt-2 inline-flex items-center rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isUploading
-                ? "Laen üles..."
-                : isAnalyzing
-                ? "Analüüsin..."
-                : "Lae fail üles"}
-            </button>
+            {isAnalyzing ? (
+              <div className="mt-2 flex items-center gap-3 text-sm text-slate-700">
+                <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+                <span>Analüüsin aruannet...</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={handleUpload}
+                className="mt-2 inline-flex items-center rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isUploading ? "Laen üles..." : "Lae fail üles"}
+              </button>
+            )}
           </div>
         </section>
 

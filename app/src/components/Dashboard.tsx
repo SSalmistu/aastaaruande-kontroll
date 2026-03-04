@@ -45,20 +45,54 @@ export function Dashboard() {
         return;
       }
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      // Storage poliitika eeldab, et esimene kaust on kasutaja ID:
+      // auth.uid() = foldername
       const safeFileName = file.name.replace(/\s+/g, "_");
-      const filePath = `${user.id}/${timestamp}-${safeFileName}`;
+      const filePath = `${user.id}/${safeFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("reports")
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          contentType: file.type || "application/pdf",
+        });
 
       if (uploadError) {
-        setError("Faili üleslaadimisel tekkis viga. Proovi uuesti.");
+        console.error("Supabase upload error:", uploadError);
+        setError(
+          `Faili üleslaadimisel tekkis viga: ${uploadError.message}. Proovi uuesti.`
+        );
         return;
       }
 
-      setSuccessMessage("Fail on edukalt üles laaditud Supabase Storage'isse.");
+      // Salvestame metaandmed ka reports tabelisse.
+      const insertPayload = {
+        user_id: user.id,
+        file_name: file.name,
+        file_path: filePath,
+        results: "",
+      };
+
+      console.log("Reports INSERT debug:", {
+        userIdFromAuth: user.id,
+        filePath,
+        payload: insertPayload,
+      });
+
+      const { error: insertError } = await supabase
+        .from("reports")
+        .insert([insertPayload]);
+
+      if (insertError) {
+        console.error("Supabase reports insert error:", insertError);
+        setError(
+          `Fail laaditi üles, aga kirje reports tabelisse salvestamisel tekkis viga: ${insertError.message}.`
+        );
+        return;
+      }
+
+      setSuccessMessage(
+        "Fail on edukalt üles laaditud ja kirje lisatud reports tabelisse."
+      );
       setFile(null);
     } catch (err) {
       setError("Midagi läks valesti. Palun proovi uuesti.");

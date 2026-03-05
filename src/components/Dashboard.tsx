@@ -1,15 +1,46 @@
 import { useState, useRef } from 'react'
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
+import OpenAI from 'openai'
 import { supabase } from '../lib/supabase'
+import systemPrompt from '../prompts/system-prompt.txt?raw'
+
+// pdfjs-dist worker setup for Vite
+GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString()
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true,
+})
+
+async function extractTextFromPdf(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await getDocument({ data: arrayBuffer }).promise
+  let fullText = ''
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const textContent = await page.getTextContent({})
+    const pageText = textContent.items
+      .map((item) => ('str' in item ? (item as { str: string }).str : ''))
+      .join(' ')
+    fullText += pageText + '\n'
+  }
+  return fullText.trim()
+}
 
 export default function Dashboard() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [analysis, setAnalysis] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
     setMessage(null)
+    setAnalysis(null)
     if (selected) {
       if (selected.type !== 'application/pdf') {
         setMessage({ type: 'error', text: 'Palun vali PDF-fail.' })
@@ -27,6 +58,7 @@ export default function Dashboard() {
 
     setLoading(true)
     setMessage(null)
+    setAnalysis(null)
 
     try {
       const fileName = `${Date.now()}_${file.name}`
@@ -39,13 +71,35 @@ export default function Dashboard() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Fail edukalt üles laaditud!' })
+      setMessage({ type: 'success', text: 'Fail edukalt üles laaditud! Analüüsin...' })
+
+      const pdfText = await extractTextFromPdf(file)
+      if (!pdfText) {
+        setMessage({ type: 'error', text: 'PDF-st ei õnnestunud teksti välja lugeda.' })
+        return
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Aruande sisu (PDF-st välja loetud tekst):\n\n${pdfText}` },
+        ],
+      })
+
+      const aiResponse = completion.choices[0]?.message?.content ?? null
+      if (aiResponse) {
+        setAnalysis(aiResponse)
+      } else {
+        setMessage({ type: 'error', text: 'AI ei saanud vastust.' })
+      }
+
       setFile(null)
       if (inputRef.current) inputRef.current.value = ''
     } catch (err: unknown) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Üleslaadimine ebaõnnestus.',
+        text: err instanceof Error ? err.message : 'Viga üleslaadimisel või analüüsimisel.',
       })
     } finally {
       setLoading(false)
@@ -113,6 +167,15 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {analysis && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Analüüsi tulemus</h3>
+              <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap rounded-lg bg-gray-50 p-4 text-sm leading-relaxed">
+                {analysis}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
+import Dashboard from './components/Dashboard'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -31,11 +32,7 @@ function App() {
     return <Auth />
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <p className="text-xl text-gray-800">Tere, oled sisse logitud!</p>
-    </div>
-  )
+  return <Dashboard />
 }
 
 export default App
